@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>honeytest</title>
+
+<!-- ============ 第 1 部分：CSS —— 决定“长什么样”（皮肤） ============ -->
+<style>
+  :root{
+    --gold:#e8b86a;
+    --ink:#f7f0e6;
+    --muted:rgba(247,240,230,.6);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    color:var(--ink);
+    background:radial-gradient(120% 75% at 50% 0%,#2c2035 0%,#191320 45%,#0a080e 100%);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:0 24px;}
+  .screen{
+    min-height:100svh;            /* 每一屏占满手机屏幕高度 */
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:18px;
+  }
+  .eyebrow{
+    margin:0;
+    font-size:12px;
+    letter-spacing:.3em;
+    color:var(--gold);
+    text-transform:uppercase;
+  }
+  h1{
+    margin:0;
+    font-family:"Songti SC","Noto Serif SC",serif;
+    font-size:clamp(38px,10vw,60px);
+    line-height:1.15;
+    font-weight:600;
+  }
+  .photo{
+    display:block;
+    width:min(78%,300px);
+    height:auto;                 /* 保持图片自己的比例：不裁切、不变形 */
+    border-radius:14px;
+    border:1px solid rgba(232,184,106,.35);
+    box-shadow:0 18px 40px rgba(0,0,0,.45);
+  }
+  p{line-height:1.9;}
+  .sub{margin:0;color:var(--muted);font-size:15px;}
+  .countdown{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+  }
+  .unit{
+    padding:14px 0;
+    text-align:center;
+    border:1px solid rgba(232,184,106,.28);
+    border-radius:12px;
+    background:rgba(255,255,255,.03);
+  }
+  .unit b{
+    display:block;
+    font-size:26px;
+    font-weight:600;
+    color:var(--gold);
+    font-variant-numeric:tabular-nums;
+  }
+  .unit span{font-size:11px;color:var(--muted);}
+  .btn{
+    align-self:flex-start;
+    margin-top:12px;
+    padding:13px 24px;
+    border:1px solid rgba(232,184,106,.5);
+    border-radius:999px;
+    background:transparent;
+    color:var(--gold);
+    font-size:15px;
+    font-family:inherit;
+    cursor:pointer;
+    transition:transform .15s ease;
+  }
+  .btn:active{transform:scale(.97);}
+  .letter{
+    display:none;
+    padding:18px 0 18px 18px;
+    border-left:2px solid rgba(232,184,106,.45);
+    font-size:15px;
+    white-space:pre-line;       /* 让换行符真的换行 */
+  }
+  .letter.show{display:block;}
+  .tip{margin:24px 0 0;font-size:12px;text-align:center;color:rgba(247,240,230,.3);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ 第 2 部分：HTML —— 决定“有什么”（骨架） ============ -->
+
+  <section class="screen">
+    <p class="eyebrow">For You</p>
+    <img class="photo" src="images/honeytest.jpg" alt="honeytest">
+    <h1 id="title">生日快乐</h1>
+    <p class="sub" id="subtitle"></p>
+  </section>
+
+  <section class="screen">
+    <p class="eyebrow">Countdown</p>
+    <div class="countdown" id="countdown"></div>
+    <p class="sub" id="cdHint"></p>
+  </section>
+
+  <section class="screen" style="padding-bottom:64px;">
+    <p class="eyebrow">A Letter</p>
+    <button class="btn" id="openBtn">拆开这封信</button>
+    <div class="letter" id="letter"></div>
+    <p class="tip">—— 亲手做的第一版</p>
+  </section>
+
+</div>
+
+<!-- ============ 第 3 部分：JS —— 决定“会做什么”（动作） ============ -->
+<script>
+  /* ---------------------------------------------------------
+     你要改的所有内容，都在下面这个 CONFIG 盒子里。
+     改完保存，刷新浏览器就能看到。
+     --------------------------------------------------------- */
+  const CONFIG = {
+    title: "To 丁宁",
+    subtitle: "这里有几天时间、一封信，还有我想对你说的话。",
+    target: "2025-08-19T00:00:00+08:00",   // 目标日期，格式：年-月-日T时:分:秒+08:00
+    hint: "距离那个日子还有",
+    hintPast: "那个日子已经过去",
+    letter: "喵喵喵。\n\n咪咪咪。\n\n宝宝。"
+  };
+
+  document.getElementById("title").textContent = CONFIG.title;
+  document.getElementById("subtitle").textContent = CONFIG.subtitle;
+  document.getElementById("cdHint").textContent = CONFIG.hint;
+  document.getElementById("letter").textContent = CONFIG.letter;
+
+  /* 生成 4 个倒计时格子 */
+  const UNITS = [["days","天"],["hours","时"],["minutes","分"],["seconds","秒"]];
+  const box = document.getElementById("countdown");
+  UNITS.forEach(function(u){
+    const el = document.createElement("div");
+    el.className = "unit";
+    el.innerHTML = '<b id="' + u[0] + '">00</b><span>' + u[1] + '</span>';
+    box.appendChild(el);
+  });
+
+  function pad(n){ return String(n).padStart(2, "0"); }
+
+  const hintEl = document.getElementById("cdHint");
+
+  function tick(){
+    const diff = new Date(CONFIG.target) - new Date();
+    const abs  = Math.abs(diff);          // 不管目标在将来还是过去，都取一个正数来算
+
+    /* 日期还没到 → 用“还有”；日期已过 → 用“已经过去” */
+    hintEl.textContent = diff > 0 ? CONFIG.hint : CONFIG.hintPast;
+
+    document.getElementById("days").textContent    = pad(Math.floor(abs / 86400000));
+    document.getElementById("hours").textContent   = pad(Math.floor(abs % 86400000 / 3600000));
+    document.getElementById("minutes").textContent = pad(Math.floor(abs % 3600000 / 60000));
+    document.getElementById("seconds").textContent = pad(Math.floor(abs % 60000 / 1000));
+  }
+
+  setInterval(tick, 1000);
+  tick();
+
+  /* 点按钮展开 / 收起那封信 */
+  const letterEl = document.getElementById("letter");
+  document.getElementById("openBtn").addEventListener("click", function(){
+    const opened = letterEl.classList.toggle("show");
+    this.textContent = opened ? "收起" : "拆开这封信";
+  });
+</script>
+</body>
+</html>
