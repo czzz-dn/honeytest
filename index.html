@@ -42,13 +42,38 @@
     line-height:1.15;
     font-weight:600;
   }
-  .photo{
-    display:block;
-    width:min(78%,300px);
-    height:auto;                 /* 保持图片自己的比例：不裁切、不变形 */
-    border-radius:14px;
-    border:1px solid rgba(232,184,106,.35);
-    box-shadow:0 18px 40px rgba(0,0,0,.45);
+  /* ===== 封面：不用照片，纯文字开场 ===== */
+  .screen.cover{position:relative;}
+  .cover-title{
+    margin:0;
+    font-family:"Songti SC","Noto Serif SC",serif;
+    font-weight:600;
+    line-height:1.18;
+  }
+  .cover-title span{display:block;}          /* 两行字各占一行 */
+  .cover-title .l1{
+    font-size:clamp(42px,12.5vw,68px);
+    letter-spacing:.06em;
+  }
+  .cover-title .l2{
+    margin-top:8px;
+    font-size:clamp(28px,8.5vw,46px);
+    letter-spacing:.3em;                     /* 字距拉开，像印章 */
+    color:var(--gold);
+  }
+  .rule{
+    width:100%;height:1px;
+    background:linear-gradient(90deg,rgba(232,184,106,.55),rgba(232,184,106,.04));
+  }
+  .scroll-hint{
+    position:absolute;left:0;right:0;bottom:34px;
+    margin:0;text-align:center;
+    font-size:12px;letter-spacing:.26em;color:rgba(247,240,230,.42);
+    animation:breathe 2.4s ease-in-out infinite;
+  }
+  @keyframes breathe{
+    0%,100%{opacity:.35;transform:translateY(0);}
+    50%    {opacity:.9; transform:translateY(5px);}
   }
   p{line-height:1.9;}
   .sub{margin:0;color:var(--muted);font-size:15px;}
@@ -102,11 +127,15 @@
 
   <!-- ============ 第 2 部分：HTML —— 决定“有什么”（骨架） ============ -->
 
-  <section class="screen">
-    <p class="eyebrow">For You</p>
-    <img class="photo" src="images/honeytest.jpg" alt="honeytest">
-    <h1 id="title">生日快乐</h1>
+  <section class="screen cover">
+    <p class="eyebrow">For 丁宁</p>
+    <h1 class="cover-title">
+      <span class="l1" id="title1">小咪小喵</span>
+      <span class="l2" id="title2">一起走</span>
+    </h1>
+    <div class="rule"></div>
     <p class="sub" id="subtitle"></p>
+    <p class="scroll-hint">往下滑 ↓</p>
   </section>
 
   <section class="screen">
@@ -131,15 +160,17 @@
      改完保存，刷新浏览器就能看到。
      --------------------------------------------------------- */
   const CONFIG = {
-    title: "To 丁宁",
-    subtitle: "这里有几天时间、一封信，还有我想对你说的话。",
+    title1: "小咪小喵",
+    title2: "一起走",
+    subtitle: "这里有一段时间、一封信，和我想对你说的话。",
     target: "2025-08-19T00:00:00+08:00",   // 目标日期，格式：年-月-日T时:分:秒+08:00
     hint: "距离那个日子还有",
     hintPast: "那个日子已经过去",
     letter: "喵喵喵。\n\n咪咪咪。\n\n宝宝。"
   };
 
-  document.getElementById("title").textContent = CONFIG.title;
+  document.getElementById("title1").textContent = CONFIG.title1;
+  document.getElementById("title2").textContent = CONFIG.title2;
   document.getElementById("subtitle").textContent = CONFIG.subtitle;
   document.getElementById("cdHint").textContent = CONFIG.hint;
   document.getElementById("letter").textContent = CONFIG.letter;
