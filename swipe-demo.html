@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>滑动实验</title>
+<style>
+  :root{
+    --paper:#f5ecdd;
+    --ink:#3a3128;
+    --red:#c2563f;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    height:100%;margin:0;overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+  }
+  body{
+    background:#191410;
+    font-family:"Kaiti SC","STKaiti",KaiTi,"楷体","Songti SC",serif;
+    color:var(--ink);
+  }
+
+  .stage{position:relative;height:100dvh;overflow:hidden;}
+
+  /* ================= 页面本身 ================= */
+  .page{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    padding:48px 32px;
+    touch-action:none;              /* 关键：手势由我们接管，浏览器别插手 */
+    will-change:transform;
+    transition:transform .58s cubic-bezier(.22,.88,.3,1);
+    background:
+      radial-gradient(circle at 18% 10%,rgba(255,255,255,.8),transparent 45%),
+      repeating-linear-gradient(0deg,transparent 0 27px,rgba(150,110,60,.07) 27px 28px),
+      var(--paper);
+  }
+  .page.dragging{transition:none;}   /* 手指拖着的时候不能有过渡，否则会跟不上手 */
+
+  /* 每一页“停”在哪里，全靠 transform 平移 */
+  .page[data-park="center"]{transform:translate3d(0,0,0);}
+  .page[data-park="left"]  {transform:translate3d(-100%,0,0);}
+  .page[data-park="right"] {transform:translate3d(100%,0,0);}
+  .page[data-park="up"]    {transform:translate3d(0,-100%,0);}
+  .page[data-park="down"]  {transform:translate3d(0,100%,0);}
+
+  /* 胶带装饰 */
+  .tape{
+    position:absolute;top:38px;left:50%;
+    width:118px;height:26px;
+    transform:translateX(-50%) rotate(-3deg);
+    background:rgba(235,196,110,.42);
+    box-shadow:0 2px 6px rgba(120,80,30,.12);
+  }
+
+  .date{margin:0;font-size:13px;letter-spacing:.28em;color:rgba(58,49,40,.42);}
+  .big{
+    margin:8px 0 0;
+    font-size:clamp(54px,19vw,92px);
+    line-height:1.12;
+    font-weight:400;
+    letter-spacing:.05em;
+  }
+  .big.red{color:var(--red);}
+  .under{
+    width:62%;height:2px;margin-top:10px;
+    background:linear-gradient(90deg,transparent,rgba(194,86,63,.5),transparent);
+  }
+  .note{margin:12px 0 0;font-size:15px;letter-spacing:.08em;color:rgba(58,49,40,.5);}
+  .heart{
+    margin:18px 0 0;font-size:30px;color:var(--red);
+    animation:beat 1.5s ease-in-out infinite;
+  }
+  @keyframes beat{
+    0%,100%{transform:scale(1);}
+    50%{transform:scale(1.2);}
+  }
+
+  /* ================= 手势提示 ================= */
+  .hint{
+    position:absolute;left:0;right:0;bottom:54px;
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    font-size:14px;letter-spacing:.24em;color:rgba(58,49,40,.5);
+    opacity:0;transition:opacity .3s ease;
+  }
+  .page[data-active] .hint{opacity:1;}      /* 只有当前页显示提示 */
+  .hint .arrow{font-size:22px;line-height:1;animation:floatY 1.5s ease-in-out infinite;}
+  .hint.x .arrow{animation-name:floatX;}
+  @keyframes floatY{
+    0%,100%{transform:translateY(0);opacity:.45;}
+    50%{transform:translateY(-7px);opacity:1;}
+  }
+  @keyframes floatX{
+    0%,100%{transform:translateX(0);opacity:.45;}
+    50%{transform:translateX(-9px);opacity:1;}
+  }
+
+  .num{
+    position:absolute;right:24px;bottom:24px;
+    margin:0;font-size:12px;letter-spacing:.14em;color:rgba(58,49,40,.32);
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+
+  <!-- ===== 第 1 页：咪咪 ===== -->
+  <section class="page" id="p1" data-park="center" data-active>
+    <div class="tape"></div>
+    <p class="date">PAGE 01</p>
+    <h1 class="big">咪咪</h1>
+    <div class="under"></div>
+    <p class="note">第一页 · 向左翻</p>
+    <div class="hint x"><span class="arrow">←</span><span>向左滑</span></div>
+    <p class="num">01 / 03</p>
+  </section>
+
+  <!-- ===== 第 2 页：喵喵 ===== -->
+  <section class="page" id="p2" data-park="right">
+    <div class="tape"></div>
+    <p class="date">PAGE 02</p>
+    <h1 class="big">喵喵</h1>
+    <div class="under"></div>
+    <p class="note">第二页 · 向上翻</p>
+    <div class="hint"><span class="arrow">↑</span><span>向上滑</span></div>
+    <p class="num">02 / 03</p>
+  </section>
+
+  <!-- ===== 第 3 页：我喜欢你 ===== -->
+  <section class="page" id="p3" data-park="down">
+    <div class="tape"></div>
+    <p class="date">PAGE 03</p>
+    <h1 class="big red">我喜欢你</h1>
+    <div class="under"></div>
+    <p class="heart">❤</p>
+    <p class="num">03 / 03</p>
+  </section>
+
+</div>
+
+<script>
+  const stage = document.getElementById("stage");
+  const pages = [...document.querySelectorAll(".page")];
+
+  /* 每次翻页的规则：
+     axis   走哪根轴（x 横 / y 竖）
+     exit   离开的那页平移到 -100% 还是 +100%
+     enter  进来的那页原本停在哪（±100%） */
+  const MOVES = {
+    "0-1": { axis:"x", exit:-100, enter: 100, exitPark:"left",  enterPark:"right" },
+    "1-2": { axis:"y", exit:-100, enter: 100, exitPark:"up",    enterPark:"down"  },
+    "2-1": { axis:"y", exit: 100, enter:-100, exitPark:"down",  enterPark:"up"    },
+    "1-0": { axis:"x", exit: 100, enter:-100, exitPark:"right", enterPark:"left"  }
+  };
+
+  /* 每一页接受哪些手势 */
+  const GESTURES = [
+    [{ axis:"x", sign:-1, to:1 }],
+    [{ axis:"x", sign: 1, to:0 }, { axis:"y", sign:-1, to:2 }],
+    [{ axis:"y", sign: 1, to:1 }]
+  ];
+
+  let index = 0;     /* 当前在第几页，从 0 数 */
+  let drag  = null;  /* 正在进行的这一次拖动 */
+
+  function size(axis){
+    return axis === "x" ? window.innerWidth : window.innerHeight;
+  }
+
+  /* 拖动时：把某一页平移到 px 像素 */
+  function movePx(el, axis, px){
+    el.style.transform = axis === "x"
+      ? `translate3d(${px}px,0,0)`
+      : `translate3d(0,${px}px,0)`;
+  }
+
+  /* 拖动时：下一页从它的停靠位（百分比）跟着往前走 px 像素 */
+  function movePct(el, axis, pct, px){
+    el.style.transform = axis === "x"
+      ? `translate3d(calc(${pct}% + ${px}px),0,0)`
+      : `translate3d(0,calc(${pct}% + ${px}px),0)`;
+  }
+
+  /* 清除临时状态，让 CSS 里的 data-park 重新接管位置（过渡会把它动画回去） */
+  function resetPage(el){
+    el.classList.remove("dragging");
+    el.style.transform = "";
+  }
+
+  function setActive(i){
+    pages.forEach(function(p, n){ p.toggleAttribute("data-active", n === i); });
+  }
+
+  /* ---------------- 按下 ---------------- */
+  stage.addEventListener("pointerdown", function(e){
+    if (drag) return;
+    drag = {
+      id: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      axis: null,
+      gesture: null,
+      page: pages[index],
+      /* 记下最近一小段时间的轨迹，用来算松手时的速度 */
+      pts: [{ x: e.clientX, y: e.clientY, t: performance.now() }]
+    };
+    stage.setPointerCapture(e.pointerId);
+  });
+
+  /* ---------------- 移动 ---------------- */
+  stage.addEventListener("pointermove", function(e){
+    if (!drag || e.pointerId !== drag.id) return;
+
+    /* 只保留最近 200 毫秒的轨迹点：算速度用最近这段，不带很久以前的动作 */
+    const now = performance.now();
+    drag.pts.push({ x: e.clientX, y: e.clientY, t: now });
+    while (drag.pts.length > 2 && now - drag.pts[0].t > 200) drag.pts.shift();
+
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+
+    /* 第一次超过 8px 时，锁定是横着拖还是竖着拖 */
+    if (!drag.axis){
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      drag.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      drag.gesture = GESTURES[index].find(function(g){
+        return g.axis === drag.axis;
+      }) || null;
+      if (!drag.gesture) return;          /* 这一页不接受这个方向 */
+      drag.page.classList.add("dragging");
+    }
+    if (!drag.gesture) return;
+
+    const val = drag.axis === "x" ? dx : dy;
+    const dir = Math.sign(val);
+
+    if (dir !== drag.gesture.sign){
+      /* 方向反了：只让当前页轻微回弹，装作拖不动 */
+      movePx(drag.page, drag.axis, val * 0.22);
+      return;
+    }
+
+    /* 方向对：当前页跟手，下一页同时被拉进来 */
+    movePx(drag.page, drag.axis, val);
+    const mv = MOVES[index + "-" + drag.gesture.to];
+    movePct(pages[drag.gesture.to], drag.axis, mv.enter, val);
+  });
+
+  /* ---------------- 松手 ----------------
+     两个条件满足任意一个就翻页：
+     1) 拖得够远（超过屏幕的 20%）
+     2) 甩得够快（最近 140 毫秒内速度超过 0.3 像素/毫秒，约 300 像素/秒），哪怕只拖了一点点 */
+  function release(e){
+    if (!drag) return;
+    const d = drag;
+    drag = null;
+
+    const val = d.axis === "x" ? (e.clientX - d.startX) : (e.clientY - d.startY);
+    const now = performance.now();
+
+    /* 用最近 140ms 的位移估算速度，单位 像素/毫秒。
+       手指停住不动再松手时，这段轨迹会被时间窗口筛掉，速度自然归零。 */
+    const recent = d.pts.filter(function(p){ return now - p.t <= 140; });
+    let speed = 0;
+    if (d.axis && recent.length >= 2){
+      const a = recent[0], b = recent[recent.length - 1];
+      const dt = b.t - a.t;
+      if (dt > 0 && dt <= 140){
+        const moved = d.axis === "x" ? (b.x - a.x) : (b.y - a.y);
+        speed = moved / dt;
+      }
+    }
+
+    const farEnough = Math.abs(val) > size(d.axis) * 0.2;
+    const flicked   = Math.abs(speed) > 0.3 && Math.abs(val) > size(d.axis) * 0.04;
+
+    const go = d.gesture && (
+      (Math.sign(val)   === d.gesture.sign && farEnough) ||
+      (Math.sign(speed) === d.gesture.sign && flicked)
+    );
+
+    if (go){
+      navigate(index, d.gesture.to);
+    } else {
+      resetPage(d.page);
+      pages.forEach(function(p, n){ if (n !== index) resetPage(p); });
+    }
+  }
+
+  stage.addEventListener("pointerup", release);
+  stage.addEventListener("pointercancel", release);
+
+  /* ---------------- 翻页 ---------------- */
+  function navigate(from, to){
+    const mv = MOVES[from + "-" + to];
+    resets();
+
+    pages[from].dataset.park = mv.exitPark;
+    pages[to].dataset.park = "center";
+
+    index = to;
+    setActive(to);
+
+    function resets(){
+      resetPage(pages[from]);
+      resetPage(pages[to]);
+    }
+  }
+
+  /* ---------------- 电脑上也能测：方向键 ---------------- */
+  const KEYS = {
+    "ArrowLeft":  { from:0, to:1 },
+    "ArrowUp":    { from:1, to:2 },
+    "ArrowRight": { from:1, to:0 },
+    "ArrowDown":  { from:2, to:1 }
+  };
+
+  window.addEventListener("keydown", function(e){
+    const k = KEYS[e.key];
+    if (k && k.from === index) navigate(k.from, k.to);
+  });
+</script>
+</body>
+</html>
